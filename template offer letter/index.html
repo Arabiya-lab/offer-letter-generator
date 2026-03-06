@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InternDocs — Offer Letter System</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #08080f;
+  --surface: #0e0e1c;
+  --surface2: #13132a;
+  --border: #1e1e3a;
+  --border2: #2a2a4e;
+  --accent: #6366f1;
+  --accent2: #818cf8;
+  --accent-glow: rgba(99,102,241,0.15);
+  --green: #22d3a0;
+  --green-bg: #0a1f18;
+  --red: #f87171;
+  --text: #e8e8f8;
+  --text2: #9090b0;
+  --text3: #5a5a80;
+  --mono: 'DM Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Glow orbs */
+body::after {
+  content: '';
+  position: fixed;
+  top: -200px;
+  left: -200px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app { position: relative; z-index: 1; }
+
+/* ── Sidebar ── */
+.sidebar {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 240px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px;
+  margin-bottom: 32px;
+}
+
+.logo-mark {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--accent), #a855f7);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.logo-text {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+
+.logo-sub {
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-top: 1px;
+  display: block;
+}
+
+nav { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text2);
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+
+.nav-item:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.nav-item.active {
+  background: var(--accent-glow);
+  color: var(--accent2);
+  border-color: var(--border2);
+}
+
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+.nav-badge {
+  margin-left: auto;
+  background: var(--accent);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-family: var(--mono);
+}
+
+/* ── Main ── */
+.main {
+  margin-left: 240px;
+  min-height: 100vh;
+  padding: 32px;
+}
+
+/* ── Page Header ── */
+.page-header {
+  margin-bottom: 28px;
+}
+
+.page-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+
+.page-subtitle { color: var(--text3); font-size: 14px; margin-top: 4px; }
+
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.card-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-title .dot {
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+/* ── Form Elements ── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-grid.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+.form-full { grid-column: 1/-1; }
+
+.field-group { display: flex; flex-direction: column; gap: 6px; }
+
+label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+input, select, textarea {
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+textarea { resize: vertical; min-height: 80px; }
+select option { background: var(--surface2); }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+.btn-primary:hover { background: #4f46e5; transform: translateY(-1px); }
+
+.btn-secondary {
+  background: var(--surface2);
+  color: var(--text2);
+  border: 1px solid var(--border2);
+}
+.btn-secondary:hover { color: var(--text); border-color: var(--accent); }
+
+.btn-success {
+  background: var(--green-bg);
+  color: var(--green);
+  border: 1px solid rgba(34,211,160,0.3);
+}
+.btn-success:hover { background: rgba(34,211,160,0.15); }
+
+.btn-danger {
+  background: rgba(248,113,113,0.1);
+  color: var(--red);
+  border: 1px solid rgba(248,113,113,0.3);
+}
+.btn-danger:hover { background: rgba(248,113,113,0.2); }
+
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-icon { padding: 8px; }
+
+.btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+
+/* ── Upload Zone ── */
+.upload-zone {
+  border: 2px dashed var(--border2);
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.upload-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.upload-icon { font-size: 40px; margin-bottom: 12px; }
+.upload-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.upload-sub { font-size: 13px; color: var(--text3); }
+
+/* ── Table ── */
+.table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+thead th {
+  background: var(--surface2);
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--surface2); }
+
+tbody td {
+  padding: 10px 14px;
+  color: var(--text2);
+  vertical-align: middle;
+}
+
+td .name { color: var(--text); font-weight: 500; }
+
+/* ── Status Pills ── */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--mono);
+}
+
+.pill.pending { background: rgba(234,179,8,0.1); color: #eab308; border: 1px solid rgba(234,179,8,0.2); }
+.pill.generated { background: rgba(99,102,241,0.1); color: var(--accent2); border: 1px solid rgba(99,102,241,0.2); }
+.pill.sent { background: var(--green-bg); color: var(--green); border: 1px solid rgba(34,211,160,0.2); }
+.pill.error { background: rgba(248,113,113,0.1); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
+.pill::before { content: '●'; font-size: 8px; }
+
+/* ── Code / ID ── */
+.intern-id {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent2);
+  background: rgba(99,102,241,0.08);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(99,102,241,0.15);
+}
+
+/* ── Stat Cards ── */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.stat-label { font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+.stat-value { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: var(--text); }
+.stat-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+/* ── Alert ── */
+.alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.alert-success { background: var(--green-bg); color: var(--green); border: 1px solid rgba(34,211,160,0.2); }
+.alert-error { background: rgba(248,113,113,0.08); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
+.alert-info { background: var(--accent-glow); color: var(--accent2); border: 1px solid var(--border2); }
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.modal-overlay.show {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 500px;
+  width: 100%;
+  transform: translateY(20px);
+  transition: transform 0.2s;
+}
+
+.modal-overlay.show .modal { transform: translateY(0); }
+.modal h2 { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+.modal .subtitle { color: var(--text3); font-size: 14px; margin-bottom: 24px; }
+.modal-actions { display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; }
+
+/* ── Section visibility ── */
+.section { display: none; }
+.section.active { display: block; }
+
+/* ── Progress ── */
+.progress-bar-wrap {
+  background: var(--bg);
+  border-radius: 4px;
+  height: 6px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #a855f7);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+/* ── Checkbox ── */
+.checkbox-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 10px 14px;
+  border-radius: 8px;
+  transition: background 0.1s;
+}
+
+.checkbox-wrap:hover { background: var(--surface2); }
+
+input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ── Loading spinner ── */
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--text);
+  animation: slideIn 0.2s ease;
+  max-width: 320px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.toast.success { border-left: 3px solid var(--green); }
+.toast.error { border-left: 3px solid var(--red); }
+.toast.info { border-left: 3px solid var(--accent); }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">📋</div>
+    <div>
+      <div class="logo-text">InternDocs</div>
+      <span class="logo-sub">Offer Letters</span>
+    </div>
+  </div>
+
+  <nav>
+    <div class="nav-item active" onclick="showSection('dashboard')">
+      <span class="nav-icon">◈</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="showSection('template')">
+      <span class="nav-icon">◉</span> Company Template
+    </div>
+    <div class="nav-item" onclick="showSection('upload')">
+      <span class="nav-icon">⊕</span> Upload Interns
+    </div>
+    <div class="nav-item" onclick="showSection('letters')">
+      <span class="nav-icon">⊞</span> Offer Letters
+      <span class="nav-badge" id="letterCount">0</span>
+    </div>
+    <div class="nav-item" onclick="showSection('email')">
+      <span class="nav-icon">◎</span> Send Emails
+    </div>
+    <div class="nav-item" onclick="showSection('verify')">
+      <span class="nav-icon">◈</span> Verification
+    </div>
+  </nav>
+
+  <div style="padding: 12px; background: var(--surface2); border-radius: 10px; border: 1px solid var(--border);">
+    <div style="font-size: 11px; color: var(--text3); font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px;">Quick Actions</div>
+    <a href="/api/sample-excel" class="btn btn-secondary btn-sm" style="width:100%; justify-content:center; text-decoration:none; margin-bottom: 6px;">⬇ Sample Excel</a>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main class="main">
+
+  <!-- ── Dashboard ── -->
+  <div id="dashboard" class="section active">
+    <div class="page-header">
+      <h1 class="page-title">Dashboard</h1>
+      <p class="page-subtitle">Overview of your internship offer letter system</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Total Interns</div>
+        <div class="stat-value" id="stat-total">0</div>
+        <div class="stat-sub">Records in system</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Letters Generated</div>
+        <div class="stat-value" id="stat-generated">0</div>
+        <div class="stat-sub">PDF created</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Emails Sent</div>
+        <div class="stat-value" id="stat-sent">0</div>
+        <div class="stat-sub">Delivered</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pending</div>
+        <div class="stat-value" id="stat-pending">0</div>
+        <div class="stat-sub">Awaiting action</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Recent Interns</div>
+      <div class="table-wrap">
+        <table id="dashTable">
+          <thead>
+            <tr>
+              <th>Intern ID</th>
+              <th>Name</th>
+              <th>Duration</th>
+              <th>Mode</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="dashTableBody">
+            <tr><td colspan="6" style="text-align:center; padding: 32px; color: var(--text3);">No interns yet. Upload an Excel file to get started.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Template ── -->
+  <div id="template" class="section">
+    <div class="page-header">
+      <h1 class="page-title">Company Template</h1>
+      <p class="page-subtitle">Configure your organization details used in offer letters</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Organization Details</div>
+      <div class="form-grid">
+        <div class="field-group">
+          <label>Company Name</label>
+          <input type="text" id="companyName" placeholder="TechCorp Solutions Pvt. Ltd.">
+        </div>
+        <div class="field-group">
+          <label>Company Email</label>
+          <input type="email" id="companyEmail" placeholder="hr@techcorp.com">
+        </div>
+        <div class="field-group form-full">
+          <label>Company Address</label>
+          <input type="text" id="companyAddress" placeholder="123 Business Park, Bengaluru, Karnataka 560001">
+        </div>
+        <div class="field-group">
+          <label>Phone Number</label>
+          <input type="text" id="companyPhone" placeholder="+91 98765 43210">
+        </div>
+        <div class="field-group">
+          <label>Website</label>
+          <input type="text" id="companyWebsite" placeholder="https://techcorp.com">
+        </div>
+        <div class="field-group">
+          <label>Signatory Name</label>
+          <input type="text" id="signatoryName" placeholder="HR Manager">
+        </div>
+        <div class="field-group">
+          <label>Signatory Title</label>
+          <input type="text" id="signatoryTitle" placeholder="Human Resources">
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="saveTemplate()">💾 Save Template</button>
+        <button class="btn btn-secondary" onclick="loadTemplate()">↺ Reload Saved</button>
+      </div>
+    </div>
+
+    <div class="card" style="border-color: var(--border2);">
+      <div class="card-title"><span class="dot"></span>Template Preview</div>
+      <div id="templatePreview" style="font-size: 13px; color: var(--text2); padding: 16px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border); font-family: var(--mono); line-height: 1.8;">
+        <div>Company: <span id="prev-company" style="color: var(--text);">—</span></div>
+        <div>Address: <span id="prev-addr" style="color: var(--text);">—</span></div>
+        <div>Email: <span id="prev-email" style="color: var(--text);">—</span></div>
+        <div>Signatory: <span id="prev-sign" style="color: var(--text);">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Upload ── -->
+  <div id="upload" class="section">
+    <div class="page-header">
+      <h1 class="page-title">Upload Interns</h1>
+      <p class="page-subtitle">Upload an Excel file with intern data to generate offer letters</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Excel Format Requirements</div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 8px;">
+        <div style="background: var(--bg); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 14px; font-size: 13px;">
+          <span style="color: var(--accent2); font-weight: 600;">Name</span><br>
+          <span style="color: var(--text3); font-size: 12px;">Full name of intern</span>
+        </div>
+        <div style="background: var(--bg); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 14px; font-size: 13px;">
+          <span style="color: var(--accent2); font-weight: 600;">Email</span><br>
+          <span style="color: var(--text3); font-size: 12px;">Intern email address</span>
+        </div>
+        <div style="background: var(--bg); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 14px; font-size: 13px;">
+          <span style="color: var(--accent2); font-weight: 600;">InternshipDuration</span><br>
+          <span style="color: var(--text3); font-size: 12px;">e.g. "3 Months"</span>
+        </div>
+        <div style="background: var(--bg); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 14px; font-size: 13px;">
+          <span style="color: var(--accent2); font-weight: 600;">StartDate</span><br>
+          <span style="color: var(--text3); font-size: 12px;">e.g. "01 March 2025"</span>
+        </div>
+        <div style="background: var(--bg); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 14px; font-size: 13px;">
+          <span style="color: var(--accent2); font-weight: 600;">EndDate</span><br>
+          <span style="color: var(--text3); font-size: 12px;">e.g. "31 May 2025"</span>
+        </div>
+        <div style="background: var(--bg); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 14px; font-size: 13px;">
+          <span style="color: var(--accent2); font-weight: 600;">Mode</span><br>
+          <span style="color: var(--text3); font-size: 12px;">Online / Offline</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Upload Excel File</div>
+      <div class="upload-zone" id="dropZone">
+        <input type="file" id="excelFile" accept=".xlsx,.xls" onchange="handleFileSelect(this)">
+        <div class="upload-icon">📊</div>
+        <div class="upload-title">Drop your Excel file here</div>
+        <div class="upload-sub">or click to browse · .xlsx, .xls supported</div>
+      </div>
+      <div id="uploadStatus" style="display:none;"></div>
+    </div>
+
+    <div id="previewSection" style="display:none;">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>Preview — <span id="previewCount">0</span> interns found</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Duration</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Mode</th>
+              </tr>
+            </thead>
+            <tbody id="previewBody"></tbody>
+          </table>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="generateLetters()">
+            ⚡ Generate All Offer Letters
+          </button>
+          <button class="btn btn-secondary" onclick="clearPreview()">✕ Clear</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Letters ── -->
+  <div id="letters" class="section">
+    <div class="page-header">
+      <h1 class="page-title">Offer Letters</h1>
+      <p class="page-subtitle">All generated offer letters</p>
+    </div>
+
+    <div class="card">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+        <input type="text" id="searchInput" placeholder="Search by name or ID..." style="flex:1;" oninput="filterInterns()">
+        <button class="btn btn-secondary" onclick="refreshInterns()">↺ Refresh</button>
+        <button class="btn btn-primary" onclick="selectAllInterns()">☑ Select All</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="masterCheck" onchange="toggleAllCheck(this.checked)"></th>
+              <th>Intern ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Duration</th>
+              <th>Mode</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="internTableBody">
+            <tr><td colspan="8" style="text-align:center; padding:32px; color:var(--text3);">No letters generated yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="btn-group" id="bulkActions" style="display:none;">
+        <button class="btn btn-success" onclick="sendSelectedEmails()">📧 Send Emails to Selected</button>
+        <span id="selectedCount" style="color:var(--text3); font-size:13px; align-self:center;"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Email ── -->
+  <div id="email" class="section">
+    <div class="page-header">
+      <h1 class="page-title">Email Configuration</h1>
+      <p class="page-subtitle">Configure SMTP settings to send offer letters to interns</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>SMTP Settings</div>
+      <div class="alert alert-info">
+        💡 For Gmail, use App Password (not your regular password). Enable 2FA and generate an App Password at myaccount.google.com.
+      </div>
+      <div class="form-grid">
+        <div class="field-group">
+          <label>SMTP Host</label>
+          <input type="text" id="smtpHost" placeholder="smtp.gmail.com">
+        </div>
+        <div class="field-group">
+          <label>SMTP Port</label>
+          <input type="number" id="smtpPort" placeholder="587" value="587">
+        </div>
+        <div class="field-group">
+          <label>Username (Email)</label>
+          <input type="email" id="smtpUser" placeholder="your@gmail.com">
+        </div>
+        <div class="field-group">
+          <label>Password / App Password</label>
+          <input type="password" id="smtpPass" placeholder="••••••••••••">
+        </div>
+        <div class="field-group">
+          <label>From Name</label>
+          <input type="text" id="smtpFrom" placeholder="HR Team">
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="saveSmtpConfig()">💾 Save SMTP Config</button>
+        <button class="btn btn-secondary" onclick="testSmtp()">🔌 Test Connection</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Send Letters</div>
+      <p style="color: var(--text3); font-size: 14px; margin-bottom: 16px;">
+        Select interns from the "Offer Letters" tab and use "Send Emails to Selected", or send to all generated interns below.
+      </p>
+      <button class="btn btn-success" onclick="sendAllEmails()">📧 Send to All Interns</button>
+    </div>
+  </div>
+
+  <!-- ── Verify ── -->
+  <div id="verify" class="section">
+    <div class="page-header">
+      <h1 class="page-title">Verification System</h1>
+      <p class="page-subtitle">Verify offer letter authenticity by Intern ID</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Manual Verification</div>
+      <div style="display:flex; gap:12px; align-items:flex-end;">
+        <div class="field-group" style="flex:1;">
+          <label>Enter Intern ID</label>
+          <input type="text" id="verifyId" placeholder="INT1A2B3C4D" style="font-family: var(--mono);">
+        </div>
+        <button class="btn btn-primary" onclick="verifyIntern()">🔍 Verify</button>
+      </div>
+      <div id="verifyResult" style="margin-top: 16px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>How QR Verification Works</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+        <div style="text-align: center; padding: 20px;">
+          <div style="font-size: 36px; margin-bottom: 12px;">📄</div>
+          <div style="font-weight: 600; color: var(--text); margin-bottom: 6px;">1. Offer Letter Generated</div>
+          <div style="font-size: 13px; color: var(--text3);">Each letter contains a unique QR code linked to the intern's ID</div>
+        </div>
+        <div style="text-align: center; padding: 20px;">
+          <div style="font-size: 36px; margin-bottom: 12px;">📱</div>
+          <div style="font-weight: 600; color: var(--text); margin-bottom: 6px;">2. Scan QR Code</div>
+          <div style="font-size: 13px; color: var(--text3);">Scan the QR code with any smartphone camera or QR scanner app</div>
+        </div>
+        <div style="text-align: center; padding: 20px;">
+          <div style="font-size: 36px; margin-bottom: 12px;">✅</div>
+          <div style="font-weight: 600; color: var(--text); margin-bottom: 6px;">3. Instant Verification</div>
+          <div style="font-size: 13px; color: var(--text3);">Server validates against Excel records and shows verified letter (no QR)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- SMTP Modal -->
+<div class="modal-overlay" id="emailModal">
+  <div class="modal">
+    <h2>📧 Send Offer Letters</h2>
+    <p class="subtitle">Sending emails to <span id="emailTargetCount">0</span> intern(s)</p>
+    <div id="emailProgress" style="display:none;">
+      <div style="font-size: 13px; color: var(--text2); margin-bottom: 8px;" id="emailProgressText">Preparing...</div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="emailProgressBar" style="width: 0%"></div>
+      </div>
+    </div>
+    <div id="emailResults" style="max-height: 200px; overflow-y: auto;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('emailModal')">Close</button>
+      <button class="btn btn-primary" id="confirmSendBtn" onclick="confirmSendEmails()">Send Now</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+let pendingInterns = [];
+let allInterns = [];
+let smtpConfig = {};
+let pendingEmailIds = [];
+
+// ── Navigation ──
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(name).classList.add('active');
+  event.currentTarget.classList.add('active');
+  
+  if (name === 'letters' || name === 'dashboard') loadInterns();
+}
+
+// ── Toast ──
+function toast(msg, type='info') {
+  const icons = { success: '✓', error: '✕', info: 'i' };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${icons[type]}</span> ${msg}`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ── Template ──
+async function saveTemplate() {
+  const data = {
+    company_name: document.getElementById('companyName').value,
+    company_email: document.getElementById('companyEmail').value,
+    company_address: document.getElementById('companyAddress').value,
+    company_phone: document.getElementById('companyPhone').value,
+    company_website: document.getElementById('companyWebsite').value,
+    signatory_name: document.getElementById('signatoryName').value,
+    signatory_title: document.getElementById('signatoryTitle').value,
+  };
+  
+  const res = await fetch('/api/template', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(data)
+  });
+  
+  if (res.ok) {
+    toast('Template saved successfully!', 'success');
+    updatePreview(data);
+  } else {
+    toast('Failed to save template', 'error');
+  }
+}
+
+async function loadTemplate() {
+  const res = await fetch('/api/template');
+  const data = await res.json();
+  if (data.company_name) {
+    document.getElementById('companyName').value = data.company_name || '';
+    document.getElementById('companyEmail').value = data.company_email || '';
+    document.getElementById('companyAddress').value = data.company_address || '';
+    document.getElementById('companyPhone').value = data.company_phone || '';
+    document.getElementById('companyWebsite').value = data.company_website || '';
+    document.getElementById('signatoryName').value = data.signatory_name || '';
+    document.getElementById('signatoryTitle').value = data.signatory_title || '';
+    updatePreview(data);
+  }
+}
+
+function updatePreview(data) {
+  document.getElementById('prev-company').textContent = data.company_name || '—';
+  document.getElementById('prev-addr').textContent = data.company_address || '—';
+  document.getElementById('prev-email').textContent = data.company_email || '—';
+  document.getElementById('prev-sign').textContent = `${data.signatory_name || '—'}, ${data.signatory_title || '—'}`;
+}
+
+// ── File Upload ──
+function handleFileSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  processExcelUpload(file);
+}
+
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processExcelUpload(file);
+});
+
+async function processExcelUpload(file) {
+  const statusEl = document.getElementById('uploadStatus');
+  statusEl.style.display = 'block';
+  statusEl.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> Parsing Excel file...</div>';
+  
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  try {
+    const res = await fetch('/api/upload-excel', { method: 'POST', body: formData });
+    const data = await res.json();
+    
+    if (data.error) {
+      statusEl.innerHTML = `<div class="alert alert-error">❌ ${data.error}${data.hint ? `<br><small>${data.hint}</small>` : ''}</div>`;
+      return;
+    }
+    
+    pendingInterns = data.interns;
+    statusEl.innerHTML = `<div class="alert alert-success">✓ Found ${data.count} interns in the file</div>`;
+    
+    // Show preview
+    const previewSection = document.getElementById('previewSection');
+    previewSection.style.display = 'block';
+    document.getElementById('previewCount').textContent = data.count;
+    
+    const tbody = document.getElementById('previewBody');
+    tbody.innerHTML = data.interns.map(i => `
+      <tr>
+        <td class="name">${i.Name}</td>
+        <td style="color: var(--text3);">${i.Email}</td>
+        <td>${i.InternshipDuration}</td>
+        <td>${i.StartDate}</td>
+        <td>${i.EndDate}</td>
+        <td><span class="pill pending">${i.Mode}</span></td>
+      </tr>
+    `).join('');
+    
+  } catch(e) {
+    statusEl.innerHTML = `<div class="alert alert-error">❌ Upload failed: ${e.message}</div>`;
+  }
+}
+
+function clearPreview() {
+  pendingInterns = [];
+  document.getElementById('previewSection').style.display = 'none';
+  document.getElementById('uploadStatus').style.display = 'none';
+  document.getElementById('excelFile').value = '';
+}
+
+// ── Generate Letters ──
+async function generateLetters() {
+  if (!pendingInterns.length) return;
+  
+  const btn = event.currentTarget;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Generating...';
+  
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ interns: pendingInterns })
+    });
+    
+    const data = await res.json();
+    
+    const successes = data.results.filter(r => r.Status === 'generated').length;
+    const errors = data.results.filter(r => r.Status === 'error').length;
+    
+    if (successes > 0) {
+      toast(`✓ ${successes} offer letters generated!`, 'success');
+    }
+    if (errors > 0) {
+      toast(`${errors} letters failed to generate`, 'error');
+    }
+    
+    clearPreview();
+    loadInterns();
+    
+    // Switch to letters tab
+    showSection('letters');
+    document.querySelectorAll('.nav-item').forEach(n => {
+      if (n.textContent.includes('Offer Letters')) n.classList.add('active');
+      else n.classList.remove('active');
+    });
+    
+  } catch(e) {
+    toast('Generation failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '⚡ Generate All Offer Letters';
+  }
+}
+
+// ── Load Interns ──
+async function loadInterns() {
+  try {
+    const res = await fetch('/api/interns');
+    const data = await res.json();
+    allInterns = data.interns || [];
+    
+    document.getElementById('letterCount').textContent = allInterns.length;
+    
+    // Update stats
+    const generated = allInterns.filter(i => i.Status === 'generated' || i.Status === 'sent').length;
+    const sent = allInterns.filter(i => i.Status === 'sent').length;
+    const pending = allInterns.filter(i => i.Status === 'pending').length;
+    
+    document.getElementById('stat-total').textContent = allInterns.length;
+    document.getElementById('stat-generated').textContent = generated;
+    document.getElementById('stat-sent').textContent = sent;
+    document.getElementById('stat-pending').textContent = pending;
+    
+    renderInternTable(allInterns);
+  } catch(e) {
+    console.error('Failed to load interns:', e);
+  }
+}
+
+function renderInternTable(interns) {
+  const tbody = document.getElementById('internTableBody');
+  const dashBody = document.getElementById('dashTableBody');
+  
+  if (!interns.length) {
+    const empty = '<tr><td colspan="8" style="text-align:center; padding:32px; color:var(--text3);">No letters generated yet.</td></tr>';
+    tbody.innerHTML = empty;
+    dashBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:32px; color:var(--text3);">No interns yet.</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = interns.map(i => `
+    <tr>
+      <td><input type="checkbox" class="intern-check" data-id="${i.InternID}" onchange="updateBulkActions()"></td>
+      <td><span class="intern-id">${i.InternID}</span></td>
+      <td class="name">${i.Name}</td>
+      <td style="color: var(--text3); font-size: 12px;">${i.Email || '—'}</td>
+      <td>${i.InternshipDuration || '—'}</td>
+      <td>${i.Mode || '—'}</td>
+      <td><span class="pill ${i.Status || 'generated'}">${i.Status || 'generated'}</span></td>
+      <td>
+        <div style="display:flex; gap:6px;">
+          <a href="/download/${i.InternID}" class="btn btn-secondary btn-sm" title="Download PDF">⬇</a>
+          <button class="btn btn-success btn-sm" onclick="quickSendEmail('${i.InternID}')" title="Send Email">📧</button>
+          <a href="/verify/${i.InternID}" target="_blank" class="btn btn-secondary btn-sm" title="Verify">🔍</a>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+  
+  // Dashboard table (last 5)
+  const recent = interns.slice(-5).reverse();
+  dashBody.innerHTML = recent.map(i => `
+    <tr>
+      <td><span class="intern-id">${i.InternID}</span></td>
+      <td class="name">${i.Name}</td>
+      <td>${i.InternshipDuration || '—'}</td>
+      <td>${i.Mode || '—'}</td>
+      <td><span class="pill ${i.Status || 'generated'}">${i.Status || 'generated'}</span></td>
+      <td>
+        <a href="/download/${i.InternID}" class="btn btn-secondary btn-sm">⬇ PDF</a>
+      </td>
+    </tr>
+  `).join('');
+  
+  document.getElementById('bulkActions').style.display = 'none';
+}
+
+function filterInterns() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = allInterns.filter(i => 
+    i.Name?.toLowerCase().includes(q) || 
+    i.InternID?.toLowerCase().includes(q) ||
+    i.Email?.toLowerCase().includes(q)
+  );
+  renderInternTable(filtered);
+}
+
+function refreshInterns() { loadInterns(); toast('Refreshed', 'info'); }
+
+function selectAllInterns() {
+  document.querySelectorAll('.intern-check').forEach(cb => cb.checked = true);
+  updateBulkActions();
+}
+
+function toggleAllCheck(checked) {
+  document.querySelectorAll('.intern-check').forEach(cb => cb.checked = checked);
+  updateBulkActions();
+}
+
+function updateBulkActions() {
+  const selected = document.querySelectorAll('.intern-check:checked');
+  const bulkDiv = document.getElementById('bulkActions');
+  if (selected.length > 0) {
+    bulkDiv.style.display = 'flex';
+    document.getElementById('selectedCount').textContent = `${selected.length} intern(s) selected`;
+  } else {
+    bulkDiv.style.display = 'none';
+  }
+}
+
+// ── Email ──
+function saveSmtpConfig() {
+  smtpConfig = {
+    host: document.getElementById('smtpHost').value,
+    port: document.getElementById('smtpPort').value,
+    username: document.getElementById('smtpUser').value,
+    password: document.getElementById('smtpPass').value,
+    from_name: document.getElementById('smtpFrom').value,
+  };
+  localStorage.setItem('smtp_host', smtpConfig.host);
+  localStorage.setItem('smtp_port', smtpConfig.port);
+  localStorage.setItem('smtp_user', smtpConfig.username);
+  localStorage.setItem('smtp_from', smtpConfig.from_name);
+  toast('SMTP configuration saved!', 'success');
+}
+
+function loadSmtpConfig() {
+  document.getElementById('smtpHost').value = localStorage.getItem('smtp_host') || '';
+  document.getElementById('smtpPort').value = localStorage.getItem('smtp_port') || '587';
+  document.getElementById('smtpUser').value = localStorage.getItem('smtp_user') || '';
+  document.getElementById('smtpFrom').value = localStorage.getItem('smtp_from') || '';
+}
+
+async function testSmtp() {
+  toast('Testing connection... (check your SMTP settings)', 'info');
+}
+
+function sendSelectedEmails() {
+  const selected = [...document.querySelectorAll('.intern-check:checked')];
+  pendingEmailIds = selected.map(cb => cb.dataset.id);
+  openEmailModal(pendingEmailIds);
+}
+
+function quickSendEmail(internId) {
+  pendingEmailIds = [internId];
+  openEmailModal([internId]);
+}
+
+function sendAllEmails() {
+  pendingEmailIds = allInterns.map(i => i.InternID);
+  openEmailModal(pendingEmailIds);
+}
+
+function openEmailModal(ids) {
+  if (!smtpConfig.host) {
+    // Try to get from form
+    smtpConfig = {
+      host: document.getElementById('smtpHost').value,
+      port: document.getElementById('smtpPort').value,
+      username: document.getElementById('smtpUser').value,
+      password: document.getElementById('smtpPass').value,
+    };
+  }
+  
+  document.getElementById('emailTargetCount').textContent = ids.length;
+  document.getElementById('emailProgress').style.display = 'none';
+  document.getElementById('emailResults').innerHTML = '';
+  document.getElementById('confirmSendBtn').style.display = 'inline-flex';
+  
+  document.getElementById('emailModal').classList.add('show');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+async function confirmSendEmails() {
+  if (!smtpConfig.host || !smtpConfig.username || !smtpConfig.password) {
+    toast('Please configure SMTP settings first', 'error');
+    closeModal('emailModal');
+    showSection('email');
+    return;
+  }
+  
+  document.getElementById('confirmSendBtn').style.display = 'none';
+  const progressEl = document.getElementById('emailProgress');
+  progressEl.style.display = 'block';
+  document.getElementById('emailProgressText').textContent = `Sending emails to ${pendingEmailIds.length} intern(s)...`;
+  document.getElementById('emailProgressBar').style.width = '30%';
+  
+  try {
+    const res = await fetch('/api/send-emails', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        intern_ids: pendingEmailIds,
+        smtp: smtpConfig
+      })
+    });
+    
+    const data = await res.json();
+    document.getElementById('emailProgressBar').style.width = '100%';
+    
+    const sent = data.results.filter(r => r.Status === 'sent').length;
+    const failed = data.results.filter(r => r.Status === 'error').length;
+    
+    document.getElementById('emailProgressText').textContent = `Done: ${sent} sent, ${failed} failed`;
+    
+    const resultsEl = document.getElementById('emailResults');
+    resultsEl.innerHTML = data.results.map(r => `
+      <div style="display:flex; justify-content:space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px;">
+        <span style="color: var(--text2);">${r.Name || r.InternID}</span>
+        <span class="pill ${r.Status === 'sent' ? 'sent' : 'error'}">${r.Status}</span>
+      </div>
+    `).join('');
+    
+    if (sent > 0) toast(`${sent} emails sent successfully!`, 'success');
+    if (failed > 0) toast(`${failed} emails failed`, 'error');
+    
+    loadInterns();
+  } catch(e) {
+    toast('Email sending failed: ' + e.message, 'error');
+    closeModal('emailModal');
+  }
+}
+
+// ── Verify ──
+async function verifyIntern() {
+  const id = document.getElementById('verifyId').value.trim();
+  if (!id) return;
+  
+  const resultEl = document.getElementById('verifyResult');
+  resultEl.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> Verifying...</div>';
+  
+  try {
+    const res = await fetch(`/api/interns`);
+    const data = await res.json();
+    const intern = data.interns.find(i => i.InternID === id);
+    
+    if (!intern) {
+      resultEl.innerHTML = '<div class="alert alert-error">❌ No record found for this Intern ID. Document could not be verified.</div>';
+    } else {
+      resultEl.innerHTML = `
+        <div class="alert alert-success">✓ Verified — Authentic document found</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
+          <div style="background: var(--bg); border: 1px solid var(--border2); border-radius: 8px; padding: 14px;">
+            <div style="font-size: 11px; color: var(--text3); text-transform: uppercase; margin-bottom: 4px;">Name</div>
+            <div style="font-weight: 600;">${intern.Name}</div>
+          </div>
+          <div style="background: var(--bg); border: 1px solid var(--border2); border-radius: 8px; padding: 14px;">
+            <div style="font-size: 11px; color: var(--text3); text-transform: uppercase; margin-bottom: 4px;">Duration</div>
+            <div>${intern.InternshipDuration}</div>
+          </div>
+          <div style="background: var(--bg); border: 1px solid var(--border2); border-radius: 8px; padding: 14px;">
+            <div style="font-size: 11px; color: var(--text3); text-transform: uppercase; margin-bottom: 4px;">Period</div>
+            <div>${intern.StartDate} → ${intern.EndDate}</div>
+          </div>
+          <div style="background: var(--bg); border: 1px solid var(--border2); border-radius: 8px; padding: 14px;">
+            <div style="font-size: 11px; color: var(--text3); text-transform: uppercase; margin-bottom: 4px;">Mode</div>
+            <div>${intern.Mode}</div>
+          </div>
+        </div>
+        <div style="margin-top: 12px;">
+          <a href="/verify/${id}/pdf" class="btn btn-success">⬇ Download Verified Letter</a>
+        </div>
+      `;
+    }
+  } catch(e) {
+    resultEl.innerHTML = '<div class="alert alert-error">❌ Verification failed. Server error.</div>';
+  }
+}
+
+// ── Init ──
+window.addEventListener('load', () => {
+  loadTemplate();
+  loadInterns();
+  loadSmtpConfig();
+  
+  // Enter key for verify
+  document.getElementById('verifyId').addEventListener('keypress', e => {
+    if (e.key === 'Enter') verifyIntern();
+  });
+});
+</script>
+</body>
+</html>
