@@ -1,7 +1,7 @@
-Flask
-pandas
-openpyxl
-reportlab
-PyMuPDF
-qrcode
-Pillow
+Flask==3.0.3
+pandas==2.2.2
+openpyxl==3.1.5
+reportlab==4.2.2
+PyMuPDF==1.24.9
+qrcode==7.4.2
+Pillow==10.4.0
