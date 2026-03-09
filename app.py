@@ -221,6 +221,14 @@ def send_email(cfg, recipient, intern_name, pdf_bytes, filename, subject, body):
     body = body.replace("{{Name}}", intern_name)
     encoded_file = base64.b64encode(pdf_bytes).decode()
 
+    from_email = os.environ.get("SENDGRID_FROM_EMAIL", "").strip()
+    if not from_email:
+        raise Exception("SENDGRID_FROM_EMAIL environment variable is not set in Render")
+
+    api_key = os.environ.get("SENDGRID_API_KEY", "").strip()
+    if not api_key:
+        raise Exception("SENDGRID_API_KEY environment variable is not set in Render")
+
     attachment = Attachment(
         FileContent(encoded_file),
         FileName(filename),
@@ -229,16 +237,22 @@ def send_email(cfg, recipient, intern_name, pdf_bytes, filename, subject, body):
     )
 
     message = Mail(
-        from_email=cfg.get("user"),
+        from_email=from_email,
         to_emails=recipient,
         subject=subject,
         plain_text_content=body
     )
     message.attachment = attachment
 
-    sg = SendGridAPIClient(os.environ.get("SENDGRID_API_KEY"))
-    response = sg.send(message)
-    return response
+    try:
+        sg = SendGridAPIClient(api_key)
+        response = sg.send(message)
+        return response
+    except Exception as e:
+        # Extract detailed SendGrid error body
+        if hasattr(e, 'body'):
+            raise Exception(f"SendGrid {e.status_code}: {e.body.decode()}")
+        raise Exception(f"SendGrid error: {str(e)}")
 
 
 _template_bytes = None
