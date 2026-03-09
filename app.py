@@ -2,7 +2,7 @@
 Reintenspark Technology — Offer Letter Generator (FINAL)
 """
 
-import io, os, json, smtplib, re
+import io, os, json, smtplib, re, base64
 from pathlib import Path
 from zipfile import ZipFile
 from email.mime.multipart import MIMEMultipart
@@ -18,6 +18,8 @@ from reportlab.graphics import renderPDF
 from reportlab.pdfgen import canvas as rl_canvas
 import openpyxl
 from openpyxl import Workbook
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
 
 app      = Flask(__name__)
 BASE_DIR = Path(__file__).parent
@@ -42,7 +44,6 @@ QR_WIPE_Y1  = 145.0
 
 REQUIRED_COLS = {"Name","Domain","Mode","Start_date","Duration","End_Date"}
 
-# ── PUBLIC URL — set by ngrok at startup, used in every QR ────────────────
 PUBLIC_URL = ""
 
 import platform
@@ -175,8 +176,6 @@ def create_letter(intern, template_bytes, base_url="", include_qr=True):
     doc.close(); tmp.seek(0)
 
     if include_qr:
-        # ── QR encodes full verify URL so phone opens it as a clickable link ──
-        # Priority: 1) base_url from UI  2) PUBLIC_URL from ngrok  3) LAN IP
         if base_url.strip():
             qr_data = base_url.rstrip("/") + "/verify/" + iid
         elif PUBLIC_URL.strip():
@@ -217,16 +216,9 @@ def create_letter(intern, template_bytes, base_url="", include_qr=True):
     else:
         return tmp.read()
 
-def send_email(cfg, recipient, intern_name, pdf_bytes, filename, subject, body):
-    from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
-import base64
-import os
 
 def send_email(cfg, recipient, intern_name, pdf_bytes, filename, subject, body):
-
     body = body.replace("{{Name}}", intern_name)
-
     encoded_file = base64.b64encode(pdf_bytes).decode()
 
     attachment = Attachment(
@@ -237,20 +229,17 @@ def send_email(cfg, recipient, intern_name, pdf_bytes, filename, subject, body):
     )
 
     message = Mail(
-        from_email="hr@yourcompany.com",
+        from_email=cfg.get("user"),
         to_emails=recipient,
         subject=subject,
         plain_text_content=body
     )
-
     message.attachment = attachment
 
-    try:
-        sg = SendGridAPIClient(os.environ.get("SENDGRID_API_KEY"))
-        sg.send(message)
+    sg = SendGridAPIClient(os.environ.get("SENDGRID_API_KEY"))
+    response = sg.send(message)
+    return response
 
-    except Exception as e:
-        raise Exception(f"SendGrid error: {e}")
 
 _template_bytes = None
 
@@ -384,13 +373,7 @@ tbody td{padding:9px 14px;color:var(--text2);vertical-align:middle}td.name{color
   </div>
   <div id="emailSettings" style="display:none;margin-top:16px">
     <div class="alert alert-info">
-      💡 For Gmail: use an <strong>App Password</strong> — <strong>myaccount.google.com → Security → App Passwords</strong>
-    </div>
-    <div class="grid2">
-      <div class="field"><label>SMTP Host</label><input type="text" id="smtpHost" value="smtp.gmail.com"></div>
-      <div class="field"><label>SMTP Port</label><input type="number" id="smtpPort" value="587"></div>
-      <div class="field"><label>Sender Email</label><input type="email" id="smtpUser" placeholder="your@gmail.com"></div>
-      <div class="field"><label>App Password</label><input type="password" id="smtpPass" placeholder="xxxx xxxx xxxx xxxx"></div>
+      💡 Emails are sent via <strong>SendGrid</strong>. Set your <strong>SENDGRID_API_KEY</strong> environment variable in Render.
     </div>
     <div class="field"><label>Email Subject</label>
       <input type="text" id="emailSubject" value="Your Internship Offer Letter – Reintenspark Technology Private Limited">
@@ -408,8 +391,6 @@ Guru basha
 HRM – Reintenspark Technology Private Limited
 +91 8762719260</textarea>
     </div>
-    <button class="btn btn-secondary" onclick="testEmail()" id="testEmailBtn">📧 Send Test Email</button>
-    <div id="testEmailResult" style="margin-top:10px;font-size:13px"></div>
   </div>
 </div>
 
@@ -448,7 +429,6 @@ function toast(msg,type='info'){
   document.getElementById('toast-container').appendChild(el);
   setTimeout(()=>el.remove(),5000);
 }
-// Load public URL from server and show it in UI
 fetch('/api/public-url').then(r=>r.json()).then(d=>{
   if(d.url){
     document.getElementById('publicUrlBox').style.display='block';
@@ -463,18 +443,6 @@ function updatePreview(){
 document.getElementById('idPrefix').addEventListener('input',updatePreview);
 document.getElementById('idStart').addEventListener('input',updatePreview);
 function toggleEmail(){document.getElementById('emailSettings').style.display=document.getElementById('emailToggle').checked?'block':'none';}
-function smtpPayload(){return{host:document.getElementById('smtpHost').value.trim(),port:document.getElementById('smtpPort').value.trim(),user:document.getElementById('smtpUser').value.trim(),pass:document.getElementById('smtpPass').value,subject:document.getElementById('emailSubject').value,body:document.getElementById('emailBody').value};}
-async function testEmail(){
-  const btn=document.getElementById('testEmailBtn'),res_el=document.getElementById('testEmailResult');
-  btn.disabled=true;btn.innerHTML='<span class="spinner" style="border-top-color:var(--green);border-color:rgba(0,0,0,.15)"></span> Sending…';res_el.textContent='';
-  try{
-    const r=await fetch('/api/test-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({smtp:smtpPayload()})});
-    const d=await r.json();
-    if(d.success){res_el.innerHTML='<span style="color:var(--green);font-weight:600">✅ Test email sent!</span>';toast('Test email sent!','success');}
-    else{res_el.innerHTML=`<span style="color:var(--red);font-weight:600">❌ ${d.error}</span>`;toast('Test failed: '+d.error,'error');}
-  }catch(e){res_el.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;}
-  finally{btn.disabled=false;btn.innerHTML='📧 Send Test Email';}
-}
 function setupZone(zoneId,inputId,handler){
   const zone=document.getElementById(zoneId),input=document.getElementById(inputId);
   zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('active')});
@@ -517,7 +485,7 @@ async function generate(){
   const btn=document.getElementById('generateBtn');
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Generating…';
   const emailOn=document.getElementById('emailToggle').checked;
-  const payload={interns:excelData,id_prefix:document.getElementById('idPrefix').value,id_start:parseInt(document.getElementById('idStart').value)||1,base_url:document.getElementById('baseUrl').value,send_email:emailOn,smtp:emailOn?smtpPayload():null};
+  const payload={interns:excelData,id_prefix:document.getElementById('idPrefix').value,id_start:parseInt(document.getElementById('idStart').value)||1,base_url:document.getElementById('baseUrl').value,send_email:emailOn,smtp:emailOn?{subject:document.getElementById('emailSubject').value,body:document.getElementById('emailBody').value}:null};
   document.getElementById('progressSection').style.display='block';
   document.getElementById('progressBar').style.width='10%';
   document.getElementById('progressText').textContent='Generating…';
@@ -585,16 +553,6 @@ def upload_template():
     _template_bytes=f.read()
     return jsonify({"success":True})
 
-@app.route("/api/test-email", methods=["POST"])
-def test_email_route():
-    data=request.json; smtp_cfg=data.get("smtp") or {}
-    try:
-        recipient=smtp_cfg.get("user","").strip()
-        if not recipient: return jsonify({"error":"Enter your sender email address first."}),400
-        send_email(cfg=smtp_cfg,recipient=recipient,intern_name="Test",pdf_bytes=b"%PDF-1.4 test",filename="test.pdf",subject="Reintenspark — SMTP Test",body="SMTP is working correctly!")
-        return jsonify({"success":True})
-    except Exception as e: return jsonify({"error":str(e)}),500
-
 @app.route("/api/generate", methods=["POST"])
 def generate_route():
     global _template_bytes
@@ -620,11 +578,19 @@ def generate_route():
             try: save_intern({**intern,"Status":"generated"})
             except: pass
             results.append({"intern_id":intern_id,"name":name,"filename":filename,"status":"ok"})
-            if do_email and smtp_cfg:
+            if do_email:
                 email=intern.get("Email","").strip()
                 if email and email.lower() not in ("nan","none",""):
                     try:
-                        send_email(cfg=smtp_cfg,recipient=email,intern_name=name,pdf_bytes=pdf_bytes,filename=filename,subject=smtp_cfg.get("subject","Offer Letter"),body=smtp_cfg.get("body","Dear {{Name}},"))
+                        send_email(
+                            cfg=smtp_cfg,
+                            recipient=email,
+                            intern_name=name,
+                            pdf_bytes=pdf_bytes,
+                            filename=filename,
+                            subject=smtp_cfg.get("subject","Offer Letter"),
+                            body=smtp_cfg.get("body","Dear {{Name}},")
+                        )
                         email_log.append({"name":name,"email":email,"status":"sent"})
                     except Exception as e:
                         email_log.append({"name":name,"email":email,"status":"failed","error":str(e)})
@@ -703,14 +669,8 @@ def sample_excel():
     buf=io.BytesIO(); wb.save(buf); buf.seek(0)
     return send_file(buf,mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",as_attachment=True,download_name="sample_interns.xlsx")
 
-# ══════════════════════════════════════════════════════════════════════════
-import os
-
 if __name__ == "__main__":
     init_excel()
-
     PORT = int(os.environ.get("PORT", 5000))
-
     print("\n🚀 Reintenspark Offer Letter System Running\n")
-
     app.run(host="0.0.0.0", port=PORT)
