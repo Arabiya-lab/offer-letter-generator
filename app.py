@@ -218,33 +218,39 @@ def create_letter(intern, template_bytes, base_url="", include_qr=True):
         return tmp.read()
 
 def send_email(cfg, recipient, intern_name, pdf_bytes, filename, subject, body):
-    smtp_host = cfg.get("host", "smtp.gmail.com")
-    smtp_port = int(cfg.get("port", 587))
-    smtp_user = cfg.get("user", "").strip()
-    smtp_pass = cfg.get("pass", "").strip()
-    if not smtp_user or not smtp_pass:
-        raise ValueError("SMTP username or password is missing.")
-    msg = MIMEMultipart()
-    msg["From"] = smtp_user; msg["To"] = recipient; msg["Subject"] = subject
-    msg.attach(MIMEText(body.replace("{{Name}}", intern_name), "plain"))
-    att = MIMEApplication(pdf_bytes, _subtype="pdf")
-    att.add_header("Content-Disposition", "attachment", filename=filename)
-    msg.attach(att)
+    from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
+import base64
+import os
+
+def send_email(cfg, recipient, intern_name, pdf_bytes, filename, subject, body):
+
+    body = body.replace("{{Name}}", intern_name)
+
+    encoded_file = base64.b64encode(pdf_bytes).decode()
+
+    attachment = Attachment(
+        FileContent(encoded_file),
+        FileName(filename),
+        FileType("application/pdf"),
+        Disposition("attachment")
+    )
+
+    message = Mail(
+        from_email="hr@yourcompany.com",
+        to_emails=recipient,
+        subject=subject,
+        plain_text_content=body
+    )
+
+    message.attachment = attachment
+
     try:
-        if smtp_port == 465:
-            server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=30)
-        else:
-            server = smtplib.SMTP(smtp_host, smtp_port, timeout=30)
-            server.ehlo(); server.starttls(); server.ehlo()
-        server.login(smtp_user, smtp_pass)
-        server.sendmail(smtp_user, recipient, msg.as_string())
-        server.quit()
-    except smtplib.SMTPAuthenticationError:
-        raise Exception("Authentication failed. For Gmail use an App Password (myaccount.google.com -> Security -> App Passwords)")
-    except smtplib.SMTPRecipientsRefused:
-        raise Exception(f"Recipient address rejected: {recipient}")
-    except smtplib.SMTPException as e:
-        raise Exception(f"SMTP error: {e}")
+        sg = SendGridAPIClient(os.environ.get("SENDGRID_API_KEY"))
+        sg.send(message)
+
+    except Exception as e:
+        raise Exception(f"SendGrid error: {e}")
 
 _template_bytes = None
 
